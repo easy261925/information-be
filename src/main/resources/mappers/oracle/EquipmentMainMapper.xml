@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.th.workbase.mapper.equipment.EquipmentMainMapper">
+    <select id="getEquipmentCurrentPosition" resultType="com.th.workbase.bean.equipment.EquipmentMain">
+        select pos.LAT,
+               pos.LNG,
+               equip.EQUIPMENT_NO,
+               equip.EQUIPMENT_STATUS,
+               equip.EQUIPMENT_TYPE,
+               equip.DETAIL_TYPE,
+               equip.EQUIPMENT_NAME
+        from EQUIPMENT_MAIN equip
+                 left join CURRENT_POSITION pos
+                           on equip.EQUIPMENT_NO = pos.EQUIPMENT_NO
+        where equip.IS_DEL != 1
+    </select>
+    <!--统计各个设备在一定时间内每班次的周转率-->
+    <select id="getTurnoverByCartNo" resultType="com.th.workbase.bean.equipment.vo.StatisticVo">
+        SELECT T1.*,T2.mineCount,T2.rockCount from (
+        WITH temp1 AS (
+        SELECT SCHEDULE_DATE,SHIFT_TYPE,RECEIVER,sum (task.distance) carDistance,
+        CASE WHEN "CATEGORY" IN ('4') THEN 'rock' ELSE 'mine' END AS "CATEGORY"
+        FROM PLAN_TASK task
+        left JOIN equipment_main equip
+        on equip.equipment_no=task.receiver
+        WHERE task.TASK_STATE = '70'
+        <if test="startDate != null">
+            and task.SCHEDULE_DATE &gt;= #{startDate}
+        </if>
+        <if test="cartName != null">
+            and equip.equipment_name like CONCAT(CONCAT('%' ,#{cartName}),'%')
+        </if>
+        <if test="endDate != null">
+            and task.SCHEDULE_DATE &lt;= #{endDate}
+        </if>
+        GROUP BY SCHEDULE_DATE, SHIFT_TYPE, RECEIVER, "CATEGORY"
+        )
+
+        SELECT * FROM
+        (
+        SELECT SCHEDULE_DATE as scheduleDate,SHIFT_TYPE as shiftType, RECEIVER as cartNo ,carDistance,"CATEGORY"
+        FROM
+        temp1 ORDER BY SCHEDULE_DATE,SHIFT_TYPE,RECEIVER
+        ) PIVOT (
+        MAX (carDistance) FOR "CATEGORY" IN ('mine' AS mineDistance, 'rock' AS rockDistance)
+        )
+        ) T1
+        join
+
+        (
+        WITH temp2 AS (
+        SELECT SCHEDULE_DATE,SHIFT_TYPE,RECEIVER,COUNT (*) carNum,
+        CASE WHEN "CATEGORY" IN ('4') THEN 'rock' ELSE 'mine' END AS "CATEGORY"
+        FROM PLAN_TASK task
+        left JOIN equipment_main equip
+        on equip.equipment_no=task.receiver
+        WHERE task.TASK_STATE = '70'
+        <if test="startDate != null">
+            and task.SCHEDULE_DATE &gt;= #{startDate}
+        </if>
+        <if test="cartName != null">
+            and equip.equipment_name like CONCAT(CONCAT('%' ,#{cartName}),'%')
+        </if>
+        <if test="endDate != null">
+            and task.SCHEDULE_DATE &lt;= #{endDate}
+        </if>
+        GROUP BY SCHEDULE_DATE, SHIFT_TYPE, RECEIVER, "CATEGORY"
+        )
+
+        SELECT * FROM
+        (
+        SELECT carNum,SCHEDULE_DATE as scheduleDate,SHIFT_TYPE as shiftType, RECEIVER as cartNo ,"CATEGORY"
+        FROM
+        temp2 ORDER BY SCHEDULE_DATE,SHIFT_TYPE,RECEIVER
+        ) PIVOT (
+        MAX (carNum) FOR "CATEGORY" IN ('mine' AS mineCount, 'rock' AS rockCount)
+        )
+        ) T2
+
+        on T1.scheduleDate=T2.scheduleDate and T1.shiftType=T2.shiftType and T1.cartNo=T2.cartNo
+
+
+    </select>
+
+
+    <select id="getTurnoverByHandler" resultType="com.th.workbase.bean.equipment.vo.StatisticVo">
+        WITH temp AS (
+        SELECT RECEIVE_HANDLER,emp.USER_NAME handlerName,sum (task.distance) carDistance,
+        CASE WHEN "CATEGORY" IN ('4') THEN 'rock' ELSE 'mine' END AS "CATEGORY"
+        FROM PLAN_TASK task
+        JOIN sys_user emp
+        on emp.id=task.receive_handler
+        WHERE task.TASK_STATE = '70'
+        <if test="startDate != null">
+            and task.SCHEDULE_DATE &gt;= #{startDate}
+        </if>
+        <if test="handlerName != null">
+            and emp.USER_NAME = #{handlerName}
+        </if>
+        <if test="endDate != null">
+            and task.SCHEDULE_DATE &lt;= #{endDate}
+        </if>
+        GROUP BY RECEIVE_HANDLER, "CATEGORY",emp.USER_NAME,RECEIVER
+        )
+
+        SELECT * FROM
+        (
+        SELECT RECEIVE_HANDLER as receiveHandler,handlerName ,RECEIVER as cartNo,carDistance,"CATEGORY"
+        FROM
+        temp ORDER BY carDistance
+        ) PIVOT (
+        MAX (carDistance) FOR "CATEGORY" IN ('mine' AS mineDistance, 'rock' AS rockDistance)
+        )
+    </select>
+
+    <select id="getTurnoverByType" resultType="com.th.workbase.bean.equipment.vo.StatisticVo">
+        WITH temp AS (
+        SELECT equip.DETAIL_TYPE detailType,sum (task.distance) carDistance,
+        CASE WHEN "CATEGORY" IN ('4') THEN 'rock' ELSE 'mine' END AS "CATEGORY"
+        FROM PLAN_TASK task
+        JOIN equipment_main equip
+        on equip.equipment_no=task.receiver
+        WHERE task.TASK_STATE = '70'
+        <if test="startDate != null">
+            and task.SCHEDULE_DATE &gt;= #{startDate}
+        </if>
+        <if test="cartType != null">
+            and equip.DETAIL_TYPE = #{cartType}
+        </if>
+        <if test="endDate != null">
+            and task.SCHEDULE_DATE &lt;= #{endDate}
+        </if>
+        GROUP BY equip.DETAIL_TYPE, "CATEGORY"
+        )
+
+        SELECT * FROM
+        (
+        SELECT cartType,carDistance,"CATEGORY"
+        FROM
+        temp ORDER BY carDistance
+        ) PIVOT (
+        MAX (carDistance) FOR "CATEGORY" IN ('mine' AS mineDistance, 'rock' AS rockDistance)
+        )
+    </select>
+
+    <select id="countShovelWork" resultType="com.th.workbase.bean.equipment.vo.StatisticVo">
+        WITH temp AS (
+        SELECT publisher,RECEIVER,COUNT (*) carNum,equip.DETAIL_TYPE,
+        CASE WHEN "CATEGORY" IN ('4') THEN 'rock' ELSE 'mine' END AS "CATEGORY"
+        FROM PLAN_TASK task
+        LEFT JOIN EQUIPMENT_MAIN equip
+        on equip.equipment_no=task.receiver
+        WHERE task.TASK_STATE = '70'
+        <if test="startDate != null">
+            and task.SCHEDULE_DATE &gt;= #{startDate}
+        </if>
+        <if test="shovelNo != null">
+            and task.PUBLISHER = #{shovelNo}
+        </if>
+        <if test="endDate != null">
+            and task.SCHEDULE_DATE &lt;= #{endDate}
+        </if>
+        GROUP BY publisher,RECEIVER, "CATEGORY",equip.DETAIL_TYPE
+        )
+
+        SELECT * FROM
+        (
+        SELECT publisher as shovelNo,RECEIVER as cartNo ,carnum,"CATEGORY",DETAIL_TYPE as cartType
+        FROM
+        temp ORDER BY publisher
+        ) PIVOT (
+        MAX (carNum) FOR "CATEGORY" IN ('mine' AS mineCount, 'rock' AS rockCount)
+        )
+    </select>
+
+    <select id="countCartWork" resultType="com.th.workbase.bean.equipment.vo.StatisticVo">
+        WITH temp AS (
+        SELECT RECEIVER,COUNT (*) carNum,equip.DETAIL_TYPE,
+        CASE WHEN "CATEGORY" IN ('4') THEN 'rock' ELSE 'mine' END AS "CATEGORY"
+        FROM PLAN_TASK task
+        LEFT JOIN EQUIPMENT_MAIN equip
+        on equip.equipment_no=task.receiver
+        WHERE task.TASK_STATE = '70'
+        <if test="startDate != null">
+            and task.SCHEDULE_DATE &gt;= #{startDate}
+        </if>
+        <if test="cartNo != null">
+            and task.RECEIVER = #{cartNo}
+        </if>
+        <if test="endDate != null">
+            and task.SCHEDULE_DATE &lt;= #{endDate}
+        </if>
+        GROUP BY RECEIVER, "CATEGORY",equip.DETAIL_TYPE
+        )
+
+        SELECT * FROM
+        (
+        SELECT RECEIVER as cartNo ,carnum,"CATEGORY",DETAIL_TYPE as cartType
+        FROM
+        temp ORDER BY RECEIVER
+        ) PIVOT (
+        MAX (carNum) FOR "CATEGORY" IN ('mine' AS mineCount, 'rock' AS rockCount)
+        )
+    </select>
+</mapper>

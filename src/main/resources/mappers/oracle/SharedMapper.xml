@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN"
+        "http://ibatis.apache.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="shared">
+    <sql id="take_header">
+        <![CDATA[
+		select * from (
+		]]>
+    </sql>
+    <!-- 分页A -->
+    <sql id="take_1">
+        <![CDATA[
+		) where rownum <2
+
+		]]>
+    </sql>
+    <sql id="take_num">
+        <![CDATA[
+		) where rownum <=${take_num}
+		]]>
+    </sql>
+
+    <sql id="pageDataPrefix">
+        <![CDATA[
+			select * from(
+				select rownum as rn, temp.* from(
+		]]>
+    </sql>
+    <sql id="pageDataSuffix">
+        <![CDATA[
+				) temp
+			) where rn > ${skip_num} and rn <= ${skip_num} + ${take_num}
+		]]>
+    </sql>
+
+</mapper>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.th.workbase.mapper.equipment.EquipmentHistoryMapper">
+    <select id="selectPositionInLastMinute" resultType="com.th.workbase.bean.equipment.EquipmentHistoryDto">
+        select LAT, LNG
+        from EQUIPMENT_HISTORY
+        where EQUIPMENT_NO = #{equipmentNo}
+          and DT_CREA_DATE_TIME >= to_date(#{previousMinute}, 'yyyy-mm-dd hh24:mi:ss')
+        order by DT_CREA_DATE_TIME desc
+    </select>
+
+    <select id="getHistoryPosition" resultType="com.th.workbase.bean.equipment.EquipmentHistoryDto">
+        select LAT, LNG,ALTITUDE,SPEED,HANDLER_ID, DT_CREA_DATE_TIME
+        from EQUIPMENT_HISTORY
+        where EQUIPMENT_NO = #{equipmentNo}
+        <if test="startTime != null">
+            and DT_CREA_DATE_TIME &gt; to_date(#{startTime}, 'yyyy-mm-dd hh24:mi:ss')
+        </if>
+        <if test="endTime != null">
+            and DT_CREA_DATE_TIME &lt; to_date(#{endTime}, 'yyyy-mm-dd hh24:mi:ss')
+        </if>
+        <if test="speed != null">
+            and SPEED &gt; #{speed}
+        </if>
+        <if test="speed != null">
+            and HANDLER_ID = #{handlerId}
+        </if>
+    </select>
+</mapper>

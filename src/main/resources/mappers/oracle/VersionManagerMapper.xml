@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.th.workbase.mapper.system.VersionManagerMapper">
+<select id="getUploadRecords" resultType="com.th.workbase.bean.system.VersionManager">
+    SELECT v.*,
+           (SELECT count(*) from EQUIPMENT_MAIN e where e.APP_VERSION=substr(v.APP_VERSION, 1+instr(v.APP_VERSION, '+')))  installCount
+    FROM VERSION_MANAGER v
+    where is_del != 1
+    order by DT_CREA_DATE_TIME desc
+</select>
+</mapper>

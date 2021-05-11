@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN"
+  "http://ibatis.apache.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="shared">
+
+	<sql id="take_1">
+		limit 1
+	</sql>
+	<sql id="take_num">
+		limit ${take_num}
+	</sql>
+	<sql id="skip_take">
+		limit ${take_num} offset ${skip_num}
+	</sql>
+
+	<sql id="selectMaps_first">
+		select * from ${table_name}
+	</sql>
+	<sql id="selectMaps_last">
+		<if test="order_by != null">
+			order by ${order_by} desc
+		</if>
+		<!-- 分页 -->
+		<choose>
+			<when test="skip_num != null">
+				<include refid="shared.skip_take" />
+			</when>
+			<when test="take_num != null">
+				<include refid="shared.take_num" />
+			</when>
+		</choose>
+	</sql>
+
+</mapper>

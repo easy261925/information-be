@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.th.workbase.mapper.plan.PlanTaskMapper">
+    <update id="setTaskToTmp">
+        update PLAN_TASK
+        set RECEIVER=null,
+            TASK_STATE='80',
+            RECEIVE_HANDLER=null
+        where id = #{taskId}
+    </update>
+</mapper>
