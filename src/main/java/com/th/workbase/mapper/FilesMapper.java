@@ -1,6 +1,5 @@
 package com.th.workbase.mapper;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.th.workbase.bean.Files;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
@@ -14,5 +13,4 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  */
 public interface FilesMapper extends BaseMapper<Files> {
 
-    void selectPage(Page<Files> page);
 }
