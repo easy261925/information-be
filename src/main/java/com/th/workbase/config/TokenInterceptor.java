@@ -26,6 +26,10 @@ public class TokenInterceptor extends HandlerInterceptorAdapter {
                              Object handler) throws Exception {
         // 地址过滤
         String uri = request.getRequestURI();
+        if (uri.contains("/files/connect")) {
+            return true;
+        }
+
         if (uri.contains("/files/create")) {
             return true;
         }

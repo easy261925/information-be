@@ -99,5 +99,10 @@ public class FilesController {
     public ResponseResultDto getFiles(int current, int pageSize, Files file, HttpServletResponse response) {
         return filesService.getData(file, current, pageSize);
     }
+
+    @PostMapping(value = "/connect")
+    public ResponseResultDto connect() {
+        return ResponseResultDto.ok();
+    }
 }
 
