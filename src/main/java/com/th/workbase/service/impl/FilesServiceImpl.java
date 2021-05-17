@@ -278,6 +278,16 @@ public class FilesServiceImpl extends ServiceImpl<FilesMapper, Files> implements
     public ResponseResultDto getData(Files file, int current, int pageSize) {
         QueryWrapper<Files> filesQueryWrapper = new QueryWrapper<>();
         Page<Files> page = new Page<>(current, pageSize);
+        filesQueryWrapper.orderByDesc("dt_update_date_time");
+        if (file.getUsername() != null) {
+            filesQueryWrapper.like("USERNAME", file.getUsername());
+        }
+        if (file.getTownId() != null) {
+            filesQueryWrapper.eq("TOWN_ID", file.getTownId());
+        }
+        if (file.getVillageName() != null) {
+            filesQueryWrapper.like("VILLAGE_NAME", file.getVillageName());
+        }
         Page<Files> filesPage = filesMapper.selectPage(page, filesQueryWrapper);
         List<Files> records = filesPage.getRecords();
         long total = filesPage.getTotal();
