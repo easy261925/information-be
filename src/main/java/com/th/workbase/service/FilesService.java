@@ -3,6 +3,8 @@ package com.th.workbase.service;
 import com.th.workbase.bean.Files;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.th.workbase.bean.system.ResponseResultDto;
+import com.th.workbase.bean.system.SysFileDto;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 
