@@ -4,15 +4,14 @@ package com.th.workbase.controller;
 import com.th.workbase.bean.Files;
 import com.th.workbase.bean.system.ResponseResultDto;
 import com.th.workbase.bean.system.SysLogDto;
+import com.th.workbase.mapper.FilesMapper;
 import com.th.workbase.service.FilesService;
+import com.th.workbase.service.baidu.BaiduService;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
 import springfox.documentation.annotations.ApiIgnore;
@@ -37,6 +36,12 @@ public class FilesController {
 
     @Resource
     private FilesService filesService;
+
+    @Resource
+    private FilesMapper filesMapper;
+
+    @Resource
+    private BaiduService baiduService;
 
     @PostMapping("/create")
     @ApiOperation("上传文件")
@@ -104,5 +109,23 @@ public class FilesController {
     public ResponseResultDto connect() {
         return ResponseResultDto.ok();
     }
+
+    @DeleteMapping(value = "/files/{id}")
+    public ResponseResultDto delete(@PathVariable("id") String id) {
+        filesMapper.deleteById(id);
+        return ResponseResultDto.ok();
+    }
+
+    @GetMapping(value = "/downloadFiles/{id}")
+    public ResponseResultDto downloadFiles(@PathVariable("id") String id) {
+        ResponseResultDto responseResultDto = filesService.downloadFiles(id);
+        return responseResultDto;
+    }
+
+    @GetMapping(value = "/zipFileById/{id}")
+    public ResponseResultDto zipFilesById(@PathVariable("id") String id) {
+        return baiduService.zipFilesById(id);
+    }
+
 }
 

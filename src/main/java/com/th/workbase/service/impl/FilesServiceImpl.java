@@ -6,6 +6,7 @@ import com.th.workbase.bean.Files;
 import com.th.workbase.bean.equipment.EquipmentBreakDownDto;
 import com.th.workbase.bean.system.ResponseResultDto;
 import com.th.workbase.bean.system.SysFileDto;
+import com.th.workbase.config.UrlFilesToZip;
 import com.th.workbase.mapper.FilesMapper;
 import com.th.workbase.service.FilesService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -19,6 +20,7 @@ import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -76,7 +78,8 @@ public class FilesServiceImpl extends ServiceImpl<FilesMapper, Files> implements
             payload.setUsername(username);
             String phone = (String) map.get("phone");
             payload.setPhone(phone);
-            String dirName = townId + villageName + username + new Date().getTime();
+            String dirName = townId + villageName + username + phone;
+            payload.setDirName(dirName);
             System.out.println("文件夹" + dirName);
             List<MultipartFile> ida = (List<MultipartFile>) map.get("IDA");
             ida.forEach(item -> {
@@ -278,7 +281,7 @@ public class FilesServiceImpl extends ServiceImpl<FilesMapper, Files> implements
     public ResponseResultDto getData(Files file, int current, int pageSize) {
         QueryWrapper<Files> filesQueryWrapper = new QueryWrapper<>();
         Page<Files> page = new Page<>(current, pageSize);
-        filesQueryWrapper.orderByDesc("dt_update_date_time");
+//        filesQueryWrapper.orderByDesc("dt_update_date_time");
         if (file.getUsername() != null) {
             filesQueryWrapper.like("USERNAME", file.getUsername());
         }
@@ -293,5 +296,108 @@ public class FilesServiceImpl extends ServiceImpl<FilesMapper, Files> implements
         long total = filesPage.getTotal();
 
         return ResponseResultDto.ok().data("data", records).data("total", total);
+    }
+
+    @Override
+    public String getFilesDirName(Files files) {
+        if (files == null) {
+            return null;
+        }
+        if (files.getDirName() != null) {
+            return files.getDirName();
+        }
+        if (files.getIda() != null) {
+            String dirNamePath = files.getIda().split("files/")[1];
+            String dirName = dirNamePath.split("/")[0];
+            return dirName;
+        }
+        if (files.getIdb() != null) {
+            String dirNamePath = files.getIdb().split("files/")[1];
+            String dirName = dirNamePath.split("/")[0];
+            return dirName;
+        }
+        if (files.getHkb() != null) {
+            String split = files.getHkb().split(",")[0];
+            String dirNamePath = split.split("files/")[1];
+            String dirName = dirNamePath.split("/")[0];
+            return dirName;
+        }
+        if (files.getFwcqz() != null) {
+            String split = files.getFwcqz().split(",")[0];
+            String dirNamePath = split.split("files/")[1];
+            String dirName = dirNamePath.split("/")[0];
+            return dirName;
+        }
+        if (files.getTdsyz() != null) {
+            String split = files.getTdsyz().split(",")[0];
+            String dirNamePath = split.split("files/")[1];
+            String dirName = dirNamePath.split("/")[0];
+            return dirName;
+        }
+        if (files.getQtqszm() != null) {
+            String split = files.getQtqszm().split(",")[0];
+            String dirNamePath = split.split("files/")[1];
+            String dirName = dirNamePath.split("/")[0];
+            return dirName;
+        }
+        if (files.getQtcl() != null) {
+            String split = files.getQtcl().split(",")[0];
+            String dirNamePath = split.split("files/")[1];
+            String dirName = dirNamePath.split("/")[0];
+            return dirName;
+        }
+        if (files.getIda1() != null) {
+            String dirNamePath = files.getIda1().split("files/")[1];
+            String dirName = dirNamePath.split("/")[0];
+            return dirName;
+        }
+        if (files.getIdb1() != null) {
+            String dirNamePath = files.getIdb1().split("files/")[1];
+            String dirName = dirNamePath.split("/")[0];
+            return dirName;
+        }
+        if (files.getIdb2() != null) {
+            String dirNamePath = files.getIdb2().split("files/")[1];
+            String dirName = dirNamePath.split("/")[0];
+            return dirName;
+        }
+        if (files.getHkb1() != null) {
+            String split = files.getHkb1().split(",")[0];
+            String dirNamePath = split.split("files/")[1];
+            String dirName = dirNamePath.split("/")[0];
+            return dirName;
+        }
+        if (files.getFwcqly() != null) {
+            String split = files.getFwcqly().split(",")[0];
+            String dirNamePath = split.split("files/")[1];
+            String dirName = dirNamePath.split("/")[0];
+            return dirName;
+        }
+        return null;
+    }
+
+    @Override
+    public ResponseResultDto downloadFiles(String id) {
+        Files files = filesMapper.selectById(id);
+        // 获取文件夹名称
+        String currentDirName = getFilesDirName(files);
+        String zipName = currentDirName + ".zip";
+        // 获取本地文件路径
+        String filePath = env.getProperty("local.uploadPath");
+        try {
+            boolean zipResult = UrlFilesToZip.createCardImgZip(filePath + currentDirName, currentDirName, filePath);
+            if (zipResult) {
+                files.setZipName(zipName);
+                filesMapper.updateById(files);
+                String url = "http://" + env.getProperty("local.ip") + ":" + env.getProperty("server.port") + "/static/files/" + zipName;
+                return ResponseResultDto.ok().data("url", url);
+            } else {
+                return ResponseResultDto.ServiceError("压缩文件出错");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseResultDto.ServiceError("压缩文件出错");
+        }
+
     }
 }

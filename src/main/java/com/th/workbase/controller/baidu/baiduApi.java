@@ -2,14 +2,12 @@ package com.th.workbase.controller.baidu;
 
 import com.th.workbase.bean.system.ResponseResultDto;
 import com.th.workbase.service.baidu.BaiduService;
-import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
-import java.io.FileNotFoundException;
 
 /**
  * @author cc

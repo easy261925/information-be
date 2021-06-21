@@ -1,5 +1,7 @@
 package com.th.workbase.service.baidu;
 
+import com.th.workbase.bean.Files;
+import com.th.workbase.bean.system.ResponseResultDto;
 import org.springframework.stereotype.Service;
 
 import java.io.FileNotFoundException;
@@ -17,4 +19,6 @@ public interface BaiduService {
 
     // 生成word
     boolean makeWordFile(String id) throws Exception;
+
+    ResponseResultDto zipFilesById(String id);
 }

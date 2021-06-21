@@ -6,11 +6,15 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.th.workbase.Exception.CustomException;
 import com.th.workbase.bean.Files;
+import com.th.workbase.bean.system.ResponseResultDto;
 import com.th.workbase.bean.system.SysFileDto;
 import com.th.workbase.common.FileTransferUtil;
 import com.th.workbase.common.utils.HttpUtil;
+import com.th.workbase.config.UrlFilesToZip;
 import com.th.workbase.mapper.FilesMapper;
+import com.th.workbase.service.FilesService;
 import com.th.workbase.service.baidu.BaiduService;
 import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
@@ -34,6 +38,9 @@ public class BaiduServiceImpl implements BaiduService {
 
     @Resource
     private FilesMapper filesMapper;
+
+    @Resource
+    private FilesService filesService;
 
     //上传文件保存到本地
     public SysFileDto saveFile(MultipartFile file, String dirName, String filename) throws UnsupportedEncodingException {
@@ -72,6 +79,30 @@ public class BaiduServiceImpl implements BaiduService {
     }
 
     @Override
+    public ResponseResultDto zipFilesById(String id) {
+        Files files = filesMapper.selectById(id);
+        // 获取本地文件路径
+        String filePath = env.getProperty("local.uploadPath");
+        String dirName = "";
+        // 获取文件夹名称
+        String currentDirName = filesService.getFilesDirName(files);
+        if (currentDirName != null) {
+            dirName = currentDirName;
+            try {
+                UrlFilesToZip.ZipImage(filePath + dirName, filePath + currentDirName);
+                files.setZipImages("1");
+                filesMapper.updateById(files);
+                return ResponseResultDto.ok();
+            } catch (Exception e) {
+                e.printStackTrace();
+                return ResponseResultDto.ServiceError("压缩图片出错");
+            }
+
+        }
+        return ResponseResultDto.ServiceError("没有文件可以压缩");
+    }
+
+    @Override
     public String imageToString(String imageUrl) {
         // 请求url
 //        String url = "https://aip.baidubce.com/rest/2.0/ocr/v1/webimage";
@@ -84,8 +115,8 @@ public class BaiduServiceImpl implements BaiduService {
             return result;
         } catch (Exception e) {
             e.printStackTrace();
+            throw new CustomException(422, "文字转换出错");
         }
-        return null;
     }
 
     public void setParagraph(XWPFDocument document, String text, int fontSize) {
@@ -96,6 +127,11 @@ public class BaiduServiceImpl implements BaiduService {
         XWPFRun run = firstParagraph.createRun();
         run.setText(text);
         run.setColor("000000");
+        if (fontSize == 12) {
+            run.setColor("333333");
+        } else if (fontSize == 8) {
+            run.setColor("4bba79");
+        }
         run.setFontSize(fontSize);
     }
 
@@ -107,24 +143,26 @@ public class BaiduServiceImpl implements BaiduService {
             String[] data = dataSource.split((","));
             if (data.length > 0) {
                 setParagraph(document, title, 12);
-                for (int i = 0; i < data.length; i++) {
+                for (int i = 0; i < data.length; i++) { // TODO
                     String url = data[i];
                     int index = i + 1;
                     setParagraph(document, title + index, 10);
                     String s = imageToString(url);
-                    JSONObject jsonObject = JSONObject.parseObject(s);
-                    List<Object> words_result = (List<Object>) jsonObject.get("words_result");
-                    if (words_result != null && words_result.size() > 0) {
-                        words_result.forEach(resultItem -> {
-                            if (resultItem != null) {
-                                if (resultItem instanceof com.alibaba.fastjson.JSONObject) {
-                                    Object words = ((JSONObject) resultItem).get("words");
-                                    setParagraph(document, words.toString(), 8);
+                    if (s != null) {
+                        JSONObject jsonObject = JSONObject.parseObject(s);
+                        List<Object> words_result = (List<Object>) jsonObject.get("words_result");
+                        if (words_result != null && words_result.size() > 0) {
+                            words_result.forEach(resultItem -> {
+                                if (resultItem != null) {
+                                    if (resultItem instanceof com.alibaba.fastjson.JSONObject) {
+                                        Object words = ((JSONObject) resultItem).get("words");
+                                        setParagraph(document, words.toString(), 8);
+                                    }
                                 }
-
-                            }
-                        });
+                            });
+                        }
                     }
+
                 }
             }
         } catch (Exception e) {
@@ -160,7 +198,14 @@ public class BaiduServiceImpl implements BaiduService {
             String fwcqly = result.getFwcqly();
 
             String title = townId + villageName + username;
-            String dirName = title + new Date().getTime() + "转换结果";
+            String dirName = "";
+            // 获取文件夹名称
+            String currentDirName = filesService.getFilesDirName(result);
+            if (currentDirName != null) {
+                dirName = currentDirName;
+            } else {
+                dirName = title + phone;
+            }
 
             // 创建临时文件
             XWPFDocument document = new XWPFDocument();
@@ -175,6 +220,7 @@ public class BaiduServiceImpl implements BaiduService {
             titleParagraphRun.setText(title);
             titleParagraphRun.setColor("000000");
             titleParagraphRun.setFontSize(20);
+            System.out.println("dirName" + dirName);
 
             // 设置镇明
             setParagraph(document, "镇名:" + townId, 12);
@@ -182,28 +228,38 @@ public class BaiduServiceImpl implements BaiduService {
             setParagraph(document, "户主姓名:" + username, 12);
             setParagraph(document, "户主电话:" + phone, 12);
             setParagraphByImages(document, "户主身份证正面信息:", ida);
-            setParagraphByImages(document, "户主身份证背面信息:", idb);
-            setParagraphByImages(document, "户主户口本:", hkb);
-            setParagraphByImages(document, "房屋产权证:", fwcqz);
-            setParagraphByImages(document, "土地使用证:", tdsyz);
-            setParagraphByImages(document, "其他产权证明:", qtqszm);
-            setParagraphByImages(document, "其他材料:", qtcl);
-            setParagraph(document, "房屋持有人（1）姓名:" + usernameA1, 12);
-            setParagraph(document, "房屋持有人（1）手机:" + phoneA1, 12);
+//            setParagraphByImages(document, "户主身份证背面信息:", idb);
+//            setParagraphByImages(document, "户主户口本:", hkb);
+//            setParagraphByImages(document, "房屋产权证:", fwcqz);
+//            setParagraphByImages(document, "土地使用证:", tdsyz);
+//            setParagraphByImages(document, "其他产权证明:", qtqszm);
+//            setParagraphByImages(document, "其他材料:", qtcl);
+            if (usernameA1 != null) {
+                setParagraph(document, "房屋持有人（1）姓名:" + usernameA1, 12);
+            }
+            if (phoneA1 != null) {
+                setParagraph(document, "房屋持有人（1）手机:" + phoneA1, 12);
+            }
             setParagraphByImages(document, "房屋持有人（1）身份证正面:", ida1);
-            setParagraphByImages(document, "房屋持有人（1）身份证背面:", ida2);
-            setParagraph(document, "房屋持有人（2）姓名:" + usernameA2, 12);
-            setParagraph(document, "房屋持有人（2）手机:" + phoneA2, 12);
+//            setParagraphByImages(document, "房屋持有人（1）身份证背面:", ida2);
+            if (usernameA2 != null) {
+                setParagraph(document, "房屋持有人（2）姓名:" + usernameA2, 12);
+            }
+            if (phoneA2 != null) {
+                setParagraph(document, "房屋持有人（2）手机:" + phoneA2, 12);
+            }
             setParagraphByImages(document, "房屋持有人（2）身份证正面:", idb1);
-            setParagraphByImages(document, "房屋持有人（2）身份证背面:", idb2);
-            setParagraphByImages(document, "房屋持有人户口本信息:", hkb1);
-            setParagraphByImages(document, "房屋产权来源:", fwcqly);
+//            setParagraphByImages(document, "房屋持有人（2）身份证背面:", idb2);
+//            setParagraphByImages(document, "房屋持有人户口本信息:", hkb1);
+//            setParagraphByImages(document, "房屋产权来源:", fwcqly);
 
             document.write(out);
             out.close();
             System.out.println("create_table document written success.");
-            saveFile(FileTransferUtil.fileToMultipartFile(currentFile), dirName, title + ".doc");
-
+            SysFileDto sysFileDto = saveFile(FileTransferUtil.fileToMultipartFile(currentFile), dirName, title + ".doc");
+            result.setTransfer("1");
+            result.setWordUrl(sysFileDto.getUrl());
+            filesMapper.updateById(result);
             return true;
 
         } catch (Exception e) {
@@ -211,4 +267,6 @@ public class BaiduServiceImpl implements BaiduService {
             return false;
         }
     }
+
+
 }

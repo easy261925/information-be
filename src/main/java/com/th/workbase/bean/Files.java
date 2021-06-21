@@ -29,6 +29,26 @@ public class Files extends BaseDto {
     @TableId(value = "ID", type = IdType.INPUT)
     private Integer id;
 
+    @ApiModelProperty(value = "WORD文件地址")
+    @TableField("WORD_URL")
+    private String wordUrl;
+
+    @ApiModelProperty(value = "是否转换过word")
+    @TableField("TRANSFER")
+    private String transfer;
+
+    @ApiModelProperty(value = "文件夹名称")
+    @TableField("DIR_NAME")
+    private String dirName;
+
+    @ApiModelProperty(value = "压缩包名称")
+    @TableField("ZIP_NAME")
+    private String zipName;
+
+    @ApiModelProperty(value = "是否压缩了图片")
+    @TableField("ZIP_IMAGES")
+    private String zipImages;
+
     @ApiModelProperty(value = "镇ID")
     @TableField("TOWN_ID")
     private String townId;

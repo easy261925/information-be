@@ -21,4 +21,8 @@ public interface FilesService extends IService<Files> {
     ResponseResultDto create(HashMap<String, Object> map);
 
     ResponseResultDto getData(Files file, int current, int pageSize);
+
+    ResponseResultDto downloadFiles(String id);
+
+    String getFilesDirName(Files files);
 }
