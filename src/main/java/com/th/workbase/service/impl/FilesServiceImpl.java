@@ -6,6 +6,7 @@ import com.th.workbase.bean.Files;
 import com.th.workbase.bean.equipment.EquipmentBreakDownDto;
 import com.th.workbase.bean.system.ResponseResultDto;
 import com.th.workbase.bean.system.SysFileDto;
+import com.th.workbase.common.utils.FileUtil;
 import com.th.workbase.config.UrlFilesToZip;
 import com.th.workbase.mapper.FilesMapper;
 import com.th.workbase.service.FilesService;
@@ -374,6 +375,35 @@ public class FilesServiceImpl extends ServiceImpl<FilesMapper, Files> implements
             return dirName;
         }
         return null;
+    }
+
+    @Override
+    public ResponseResultDto deleteFiles(String id) {
+        Files files = filesMapper.selectById(id);
+        // 获取文件夹名称
+        String currentDirName = getFilesDirName(files);
+        // 获取本地文件路径
+        String filePath = env.getProperty("local.uploadPath");
+        FileUtil.deleteDirectory(filePath + currentDirName);
+        FileUtil.deleteFile(filePath + currentDirName + ".zip");
+        filesMapper.deleteById(id);
+        return ResponseResultDto.ok();
+    }
+
+    @Override
+    public ResponseResultDto deleteAllFiles(Files file) {
+        List<String> fileIdList = file.getFileIdList();
+        for (String id : fileIdList) {
+            Files files = filesMapper.selectById(id);
+            // 获取文件夹名称
+            String currentDirName = getFilesDirName(files);
+            // 获取本地文件路径
+            String filePath = env.getProperty("local.uploadPath");
+            FileUtil.deleteDirectory(filePath + currentDirName);
+            FileUtil.deleteFile(filePath + currentDirName + ".zip");
+            filesMapper.deleteById(id);
+        }
+        return ResponseResultDto.ok();
     }
 
     @Override

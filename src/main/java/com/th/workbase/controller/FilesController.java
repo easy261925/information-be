@@ -19,6 +19,7 @@ import springfox.documentation.annotations.ApiIgnore;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -112,8 +113,12 @@ public class FilesController {
 
     @DeleteMapping(value = "/files/{id}")
     public ResponseResultDto delete(@PathVariable("id") String id) {
-        filesMapper.deleteById(id);
-        return ResponseResultDto.ok();
+        return filesService.deleteFiles(id);
+    }
+
+    @PostMapping(value = "/filesAll")
+    public ResponseResultDto deleteAll(@RequestBody Files file) {
+        return filesService.deleteAllFiles(file);
     }
 
     @GetMapping(value = "/downloadFiles/{id}")

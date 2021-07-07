@@ -1,6 +1,7 @@
 package com.th.workbase.bean;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import com.baomidou.mybatisplus.annotation.*;
 import com.th.workbase.bean.BaseDto;
@@ -11,7 +12,7 @@ import lombok.EqualsAndHashCode;
 
 /**
  * <p>
- * 
+ *
  * </p>
  *
  * @author cc
@@ -133,5 +134,7 @@ public class Files extends BaseDto {
     @TableField("FWCQLY")
     private String fwcqly;
 
+    @TableField(exist = false)
+    private List<String> fileIdList;
 
 }

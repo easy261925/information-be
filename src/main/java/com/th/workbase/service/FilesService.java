@@ -6,6 +6,7 @@ import com.th.workbase.bean.system.ResponseResultDto;
 import com.th.workbase.bean.system.SysFileDto;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
@@ -25,4 +26,8 @@ public interface FilesService extends IService<Files> {
     ResponseResultDto downloadFiles(String id);
 
     String getFilesDirName(Files files);
+
+    ResponseResultDto deleteFiles(String id);
+
+    ResponseResultDto deleteAllFiles(Files Files);
 }
